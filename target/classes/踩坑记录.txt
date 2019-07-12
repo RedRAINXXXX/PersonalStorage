@@ -1,0 +1,240 @@
+一、配置文件
+1.配置文件位置：
+applicationContext.xml：默认web/WEB-INF，可在web.xml的context-param标签配置
+dispatcher-servlet.xml：默认web/WEB-INF，可在web.xml中servlet下的init-param标签中配置
+参考：https://blog.csdn.net/zhijiannnn/article/details/80908609
+
+2.通配符的匹配很全面, 但无法找到元素 'XXX:XXX' 的声明
+原因：xml文件头部缺少命名空间或xsi:schemaLocation
+例如：dispatcher-servlet.xml中要使用<mvc:resources>标签，头部<beans>标签要添加属性xmlns:mvc="http://www.springframework.org/schema/mvc"，
+xsi:schemaLocation属性要添加
+http://www.springframework.org/schema/mvc
+http://www.springframework.org/schema/mvc/spring-mvc.xsd
+
+
+二、后端
+1.Controller返回JSON数据时报406
+(1)添加Jackson依赖包（SpringBoot会自动添加，注意Spring MVC 3.x和4.x依赖包不一样）
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>2.9.8</version>
+</dependency>
+(2)不必在dispatcher-servlet.xml中配置HttpMessageConverter
+(3)不要忘记将新添加的依赖包加入web/WEB-INF/lib文件夹！
+https://www.jianshu.com/p/eea6e2551749
+https://www.cnblogs.com/westward/p/7098931.html
+
+2.Controller中获取request或session
+在Controller方法中增加参数HttpServletRequest request或HttpSession session
+session也可通过request.getSession()获取
+
+3.自定义bean：
+首先写好类，然后在applicationContext.xml中配置
+使用@Autowired, @Resource或@Qualifier注解在其他类中注入
+https://www.cnblogs.com/xiaoxi/p/5850095.html
+https://blog.csdn.net/u010476994/article/details/80986435
+
+4.Repository中save方法的返回值
+如果使用MySQL自增id，则调用save方法时实体的id置为null
+如果要使用实际保存的实体的id进行后续工作则使用save方法的返回值，返回的实体已将id字段置为实际存入数据库的id
+
+5.下载文件时中文文件名乱码
+设置ResponseEntity的header时使用编码后的文件名
+URL编码器会将空格编码为"+"，而浏览器解码时不会转换回空格，因此将编码后的"+"替换为空格的Unicode编码"%20"
+filename = URLEncoder.encode(filename, "UTF-8").replace("+", "%20");
+return ResponseEntity.ok()
+		.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+		.body(content);
+https://www.jianshu.com/p/9091f8c8ea65
+https://blog.csdn.net/u013964761/article/details/79820685
+
+
+三、前端(JSP, JavaScript, jQuery)
+1.IDEA编辑器提示：Unresolved function or method $()
+File | Settings | Languages & Frameworks | JavaScript | Libraries
+添加jQuery库
+
+2.自定义form验证规则：设置onsubmit属性
+表单提交过程：用户点击按钮->onclick->onclick返回true或未被处理->onsubmit->onsubmit返回true或未被处理->提交表单
+若在标签中设置一定要加return: <form onsubmit="return myValidation()">，否则无论返回什么都会提交！
+如果myValidation()执行时出现错误则返回true，表单仍然会提交
+
+3.js中document.getElementById("id")返回HTMLElement类型对象（单个值），而jQuery的$("#id")返回列表（即使按id选择至多只有一个元素）
+如果选择的元素存在则document.getElementById("id")等价于$("#id")[0]
+如果不存在则前者返回null而后者返回空列表
+
+4.jsp中使用c标签需要的jar包：jstl.jar和standard.jar
+Maven依赖：
+<dependency>
+    <groupId>javax.servlet</groupId>
+    <artifactId>jstl</artifactId>
+    <version>1.2</version>
+    <scope>runtime</scope>
+</dependency>
+<dependency>
+    <groupId>taglibs</groupId>
+    <artifactId>standard</artifactId>
+    <version>1.1.2</version>
+</dependency>
+
+5.jsp中获取session数据：${sessionScope.attrName}
+
+6.js实现离开页面提醒：
+<script>
+    window.onbeforeunload = function (event) {
+        return "确定离开当前页面？";
+    }
+</script>
+提交表单后取消提醒：
+<form onsubmit="window.onbeforeunload = null">...</form>
+参考：https://www.cnblogs.com/jyyjava/p/5008554.html
+
+7.提交表单时执行ajax而不跳转页面：
+(1)ajaxSubmit
+https://blog.csdn.net/smilefyx/article/details/49332433
+(2)阻止默认submit事件+FormData
+https://blog.csdn.net/zqian1994/article/details/79635413
+(3)提交按钮改为普通按钮+onclick
+忠告：不要把时间浪费在这种没有意义的事上！
+
+8.<textarea>什么都不写但提交后多出很多空格
+原因：若不设定wrap，<textarea>和</textarea>之间的所有字符都会被当作textarea的值，包括缩进
+解决方法：开始和结束标签应在同一行：
+<textarea>
+	内容
+</textarea>
+改为
+<textarea>内容</textarea>
+https://blog.csdn.net/txqd1989/article/details/71709260
+
+9.上传文件时报错：
+org.springframework.web.multipart.MultipartException: Current request is not a multipart request
+在<form>标签中增加属性enctype="multipart/form-data"
+
+10.选择文件时限制文件大小
+https://blog.csdn.net/wumingxiaoqiang/article/details/52637279
+
+
+四、部署
+1.Run/Debug Configuration | Application Context设置为空和/{project-name}运行时样式不一样
+清除浏览器缓存！！
+
+2.java.lang.ClassNotFoundException: org.springframework.web.context.ContextLoaderListener
+原因：未将Maven依赖包添加到web/WEB-INF/lib文件夹
+解决方法：Project Settings | Artifacts将右侧Available elements中的Maven依赖包添加到左侧
+
+3.Failed to introspect Class [org.springframework.web.multipart.commons.CommonsMultipartResolver] from ClassLoader
+原因：未添加上传文件所需jar
+添加Maven依赖：
+<dependency>
+    <groupId>commons-fileupload</groupId>
+    <artifactId>commons-fileupload</artifactId>
+    <version>1.3.3</version>
+</dependency>
+
+4.在服务器上部署war包时报错：
+org.apache.catalina.core.StandardContext.filterStart Exception starting filter [loginFilter]
+ java.lang.AbstractMethodError
+        at org.apache.catalina.core.ApplicationFilterConfig.initFilter(ApplicationFilterConfig.java:285)
+        at org.apache.catalina.core.ApplicationFilterConfig.getFilter(ApplicationFilterConfig.java:266)
+        at org.apache.catalina.core.ApplicationFilterConfig.<init>(ApplicationFilterConfig.java:108)
+        at org.apache.catalina.core.StandardContext.filterStart(StandardContext.java:4637)
+        at org.apache.catalina.core.StandardContext.startInternal(StandardContext.java:5282)
+        at org.apache.catalina.util.LifecycleBase.start(LifecycleBase.java:150)
+        at org.apache.catalina.core.ContainerBase.addChildInternal(ContainerBase.java:754)
+        at org.apache.catalina.core.ContainerBase.addChild(ContainerBase.java:730)
+        at org.apache.catalina.core.StandardHost.addChild(StandardHost.java:734)
+        at org.apache.catalina.startup.HostConfig.deployWAR(HostConfig.java:985)
+        at org.apache.catalina.startup.HostConfig$DeployWar.run(HostConfig.java:1857)
+        at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)
+        at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+        at java.lang.Thread.run(Thread.java:748)
+原因：自定义的Filter未实现init和destroy方法
+https://blog.csdn.net/jdbdh/article/details/82670343
+
+5.在服务器上部署后访问数据库报错：
+org.apache.catalina.core.StandardWrapperValve.invoke Servlet.service() for servlet [dispatcher] in context with path [/invest-eval] threw exception [Request processing failed;
+nested exception is org.springframework.transaction.CannotCreateTransactionException: Could not open JPA EntityManager for transaction;
+nested exception is org.hibernate.exception.JDBCConnectionException: Unable to acquire JDBC Connection] with root cause
+ java.net.ConnectException: Connection refused (Connection refused)
+        at java.net.PlainSocketImpl.socketConnect(Native Method)
+        at java.net.AbstractPlainSocketImpl.doConnect(AbstractPlainSocketImpl.java:350)
+        at java.net.AbstractPlainSocketImpl.connectToAddress(AbstractPlainSocketImpl.java:206)
+        at java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:188)
+        at java.net.SocksSocketImpl.connect(SocksSocketImpl.java:392)
+        at java.net.Socket.connect(Socket.java:589)
+        at com.mysql.cj.protocol.StandardSocketFactory.connect(StandardSocketFactory.java:155)
+...
+原因：要连接docker中运行的mysql是不能用localhost, 127.0.0.1来连接的，因为每个docker运行容器的localhost, 127.0.0.1都是自己容器本身，不是mysql容器
+解决方法：修改成母机IP
+
+
+五、其他
+1.权限控制：禁止未登录时直接访问某些URL
+方法：使用过滤器
+https://blog.csdn.net/weixin_43863007/article/details/88392021
+
+2.获取ServletContextPath的方法
+URL请求的格式为http://localhost:8080/{project-name}/url
+其中/{project-name}部分为ServletContextPath
+jsp: ${pageContext.request.contextPath}或<%= request.getContextPath() %>
+js：在jsp中使用变量保存<script>contextPath = "${pageContext.request.contextPath}";</script>
+Controller:
+(1)返回视图名、ModelAndView、重定向(redirect:/url)时Spring会自动添加contextPath前缀
+(2)通过HttpServletRequest获取：request.getServletContext().getContextPath()
+
+3.MySQL左外连接ON AND和ON WHERE的区别
+表a：
++----+------+
+| id | name |
++----+------+
+|  1 | A    |
+|  2 | B    |
+|  3 | C    |
+|  4 | D    |
++----+------+
+表b：
++------+------+-------+
+| a_id | b_id | score |
++------+------+-------+
+|    1 |    1 |    90 |
+|    1 |    2 |    85 |
+|    1 |    4 |    87 |
+|    2 |    1 |    89 |
+|    2 |    3 |    92 |
+|    2 |    4 |    91 |
++------+------+-------+
+则
+SELECT a.id, a.name, b.score
+FROM a LEFT JOIN b ON a.id = b.a_id AND b.b_id = 1;
+输出
++----+------+-------+
+| id | name | score |
++----+------+-------+
+|  1 | A    |    90 |
+|  2 | B    |    85 |
+|  3 | C    |  NULL |
+|  4 | D    |    87 |
++----+------+-------+
+而
+SELECT a.id, a.name, b.score
+FROM a LEFT JOIN b ON a.id = b.a_id
+WHERE b.b_id = 1;
+输出
++----+------+-------+
+| id | name | score |
++----+------+-------+
+|  1 | A    |    90 |
+|  2 | B    |    85 |
+|  4 | D    |    87 |
++----+------+-------+
+参考：
+https://www.cnblogs.com/HKUI/p/8536969.html
+MySQL手册13.2.10.2节：
+Generally, the ON clause serves for conditions that specify how to join tables,
+and the WHERE clause restricts which rows to include in the result set.
+即：ON语句控制连接条件，而WHERE语句控制从临时表生成结果表的过滤条件
+如果右表中没有符合ON语句条件的记录则在结果表中所有字段会被置为NULL，而不符合WHERE语句条件的连接结果会被过滤掉

@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="war" build-on-make="true" name="InvestmentEvaluation:Web">
+    <output-path>$PROJECT_DIR$/out/artifacts/InvestmentEvaluation_Web</output-path>
+    <root id="archive" name="invest-eval.war">
+      <element id="artifact" artifact-name="InvestmentEvaluation:Web exploded" />
+    </root>
+  </artifact>
+</component>

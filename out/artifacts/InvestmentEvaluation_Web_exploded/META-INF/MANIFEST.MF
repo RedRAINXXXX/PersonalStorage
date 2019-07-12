@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Implementation-Title: investment-evaluation
+Implementation-Version: 0.0.1-SNAPSHOT
+Built-By: lihongyu
+Implementation-Vendor-Id: com.zzy
+Created-By: IntelliJ IDEA
+Build-Jdk: 12.0.1
+Main-Class: ${start-class}
+

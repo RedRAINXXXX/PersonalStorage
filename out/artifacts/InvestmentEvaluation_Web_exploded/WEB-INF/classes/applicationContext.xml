@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/data/jpa
+        http://www.springframework.org/schema/data/jpa/spring-jpa.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <jpa:repositories base-package="com.zzy.investeval" />
+    <context:component-scan base-package="com.zzy.investeval" />
+
+    <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver" />
+        <property name="url" value="jdbc:mysql://localhost:3306/investment_evaluation?useUnicode=true&amp;characterEncoding=utf-8&amp;serverTimezone=UTC" />
+        <property name="username" value="root" />
+        <property name="password" value="19981028lhy" />
+    </bean>
+
+    <bean id="entityManagerFactory" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+        <property name="dataSource" ref="dataSource" />
+        <property name="packagesToScan" value="com.zzy.investeval" />
+        <property name="jpaVendorAdapter">
+            <bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
+                <property name="database" value="MYSQL" />
+                <property name="generateDdl" value="true" />
+                <property name="showSql" value="false" />
+                <property name="databasePlatform" value="org.hibernate.dialect.MySQL8Dialect" />
+            </bean>
+        </property>
+    </bean>
+
+    <!--配置针对JPA的局部事务管理器-->
+    <bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+        <property name="entityManagerFactory" ref="entityManagerFactory" />
+    </bean>
+
+    <!--根据事务注解来生成事务代理-->
+    <tx:annotation-driven transaction-manager="transactionManager" />
+
+    <!-- MongoDB连接 -->
+    <bean id="mongoDBConnection" name="mongoDBConnection"
+        class="com.mongodb.client.MongoClients" factory-method="create" destroy-method="close">
+        <constructor-arg index="0" value="mongodb://localhost:27017/" />
+        <!-- <constructor-arg index="0" value="mongodb://zzy:zzy979953@192.168.1.120:27017/admin" /> -->
+    </bean>
+
+    <!-- 项目成果及产业化前期信息表数据库 -->
+    <bean id="industrialFileRepository" name="industrialFileRepository"
+        class="com.zzy.investeval.repository.MongoDBFileRepository" init-method="init">
+        <property name="database" value="industrial" />
+    </bean>
+
+    <!-- 投资评估要件证据材料数据库 -->
+    <bean id="evidenceFileRepository" name="evidenceFileRepository"
+        class="com.zzy.investeval.repository.MongoDBFileRepository" init-method="init">
+        <property name="database" value="evidence" />
+    </bean>
+
+    <!-- 评价报告数据库 -->
+    <bean id="reportFileRepository" name="reportFileRepository"
+        class="com.zzy.investeval.repository.MongoDBFileRepository" init-method="init">
+        <property name="database" value="report" />
+    </bean>
+</beans>
